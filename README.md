@@ -119,7 +119,7 @@ You can easily modify the list of stock symbols monitored in real-time by editin
 
 ## Contributing
 
-Contributions are welcome! If you have ideas for new features, elements, or enhancements, feel free to fork the repository and submit a pull request. Please ensure your code follows geenral best practices and is well-documented.
+Contributions are welcome! If you have ideas for new features, elements, or enhancements, feel free to fork the repository and submit a pull request. Please ensure your code follows general best practices and is well-documented.
 
 ## License
 
