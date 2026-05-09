@@ -10,12 +10,7 @@ import ta
 # Fetch stock data based on ticker, period, & interval through Yahoo Finance API
 def fetch_stock_data(ticker, period, interval):
     try:
-        end_date = datetime.now()
-        if period == '1wk':
-            start_date = end_date - timedelta(days=7)
-        else:
-            start_date = end_date - timedelta(days=int(period[:-1]))
-        data = yf.download(ticker, start=start_date, end=end_date, interval=interval)
+        data = yf.download(ticker, period=period, interval=interval)
         if data.empty:
             st.error(f"No data found for {ticker}. Please check the ticker symbol and try again.")
             return None
@@ -24,24 +19,30 @@ def fetch_stock_data(ticker, period, interval):
         st.error(f"Error fetching data: {e}")
         return None
 
+# Cache real-time sidebar data to avoid hammering the Yahoo Finance API on every rerender
+@st.cache_data(ttl=60)
+def fetch_realtime_data(symbol):
+    return fetch_stock_data(symbol, '1d', '1m')
+
 # Format the date & time to ensure it is timezone aware with correct formatting
 def process_data(data):
     if data.index.tzinfo is None:
         data.index = data.index.tz_localize('UTC')
     data.index = data.index.tz_convert('US/Eastern')
     data.reset_index(inplace=True)
-    data.rename(columns={'Date': 'Datetime'}, inplace=True)
+    if 'Date' in data.columns:
+        data.rename(columns={'Date': 'Datetime'}, inplace=True)
     return data
 
 # Calculate basic metrics from stock data
 def calculate_metrics(data):
-    last_close = data['Close'].iloc[-1]
-    prev_close = data['Close'].iloc[0]
+    last_close = float(data['Close'].iloc[-1])
+    prev_close = float(data['Close'].iloc[0])
     change = last_close - prev_close
     pct_change = (change / prev_close) * 100
-    high = data['High'].max()
-    low = data['Low'].min()
-    volume = data['Volume'].sum()
+    high = float(data['High'].max())
+    low = float(data['Low'].min())
+    volume = int(data['Volume'].sum())
     return last_close, change, pct_change, high, low, volume
 
 # Add technical indicators (SMA, EMA, RSI)
@@ -129,12 +130,12 @@ if st.sidebar.button('Update'):
 st.sidebar.header('Real-Time Stock Prices')
 stock_symbols = ['AAPL', 'GOOGL', 'AMZN', 'MSFT']
 for symbol in stock_symbols:
-    real_time_data = fetch_stock_data(symbol, '1d', '1m')
+    real_time_data = fetch_realtime_data(symbol)
     if real_time_data is not None:
         real_time_data = process_data(real_time_data)
-        last_price = real_time_data['Close'].iloc[-1]
-        change = last_price - real_time_data['Open'].iloc[0]
-        pct_change = (change / real_time_data['Open'].iloc[0]) * 100
+        last_price = float(real_time_data['Close'].iloc[-1])
+        change = last_price - float(real_time_data['Open'].iloc[0])
+        pct_change = (change / float(real_time_data['Open'].iloc[0])) * 100
         st.sidebar.metric(f"{symbol}", f"{last_price:.2f} USD", f"{change:.2f} ({pct_change:.2f}%)")
 
 # Sidebar information section
