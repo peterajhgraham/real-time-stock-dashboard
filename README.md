@@ -1,107 +1,116 @@
-# Real Time Stock Price Dashboard
- 
-This was originally made for my grandmother who loves investing :)
- 
-This project is a real-time full-stack stock price dashboard built using Python, Streamlit, Plotly, and various financial data analysis tools. The dashboard allows users to visualize stock prices, apply technical indicators such as SMA 20, EMA20, and RSI14, and monitor real-time prices of selected stocks.
- 
-*Enjoy a stock price dashboard that you can run right in your terminal!*
- 
-https://github.com/user-attachments/assets/73e8ccaa-fba7-4288-9af2-376f0964c727
- 
+# Real-Time Time-Series Signal Analysis Platform
+
+A real-time signal visualization and quantitative analysis platform — originally built for financial time-series, the architecture and signal processing primitives apply directly to any streaming time-series data including physiological and neural signals.
+
+The dashboard ingests a live stream of samples, applies a battery of DSP-style filters and statistical estimators, and renders the results — including a Welch power-spectral-density panel and an STFT spectrogram — in a single Streamlit interface. Every indicator is implemented from scratch on top of NumPy / SciPy / Pandas so its filter structure is visible, not hidden inside a black-box library.
+
+*(Originally prototyped as a stock-price toy for my grandmother, who loves investing.)*
+
+![Example dashboard](Example.png)
+
+---
+
+## Signal Processing Framework
+
+Every "technical indicator" in this dashboard is a digital signal processing primitive applied to a one-dimensional time-series. The financial vocabulary is a thin wrapper around standard DSP operators:
+
+| Indicator | DSP interpretation | Formulation |
+|---|---|---|
+| **SMA** (Simple Moving Average) | Finite impulse response (FIR) box filter — convolution with a uniform 1/N kernel of length N. Linear phase, sinc-shaped magnitude response. | `y[n] = (1/N) · Σ x[n-k]` for `k = 0..N-1` |
+| **EMA** (Exponential Moving Average) | First-order infinite impulse response (IIR) filter with an exponential decay kernel. Single real pole; geometric weighting of past samples. | `y[n] = α·x[n] + (1-α)·y[n-1]`, `α = 2/(N+1)` |
+| **RSI** (Relative Strength Index) | Bounded momentum oscillator — half-wave rectification of the first difference, followed by Wilder IIR smoothing of the positive and negative branches. | `RS = avg_gain / avg_loss`, `RSI = 100 − 100/(1+RS)` |
+| **Bollinger Bands** | Volatility envelope — rolling mean ± k·σ over a sliding window. Statistical tolerance band on the recent local distribution. | `(μ_t − k·σ_t, μ_t + k·σ_t)` |
+| **MACD** | Bandpass filter — difference of two EMAs at different time constants isolates a passband between them; the signal line is an EMA of that bandpass output. | `EMA_fast(x) − EMA_slow(x)`, signal = `EMA_sig(MACD)` |
+| **ATR** (Average True Range) | Rolling amplitude envelope — Wilder-smoothed true range; tracks instantaneous signal volatility. | `EMA(max(high-low, |high-close₋₁|, |low-close₋₁|))` |
+| **OBV** (On-Balance Volume) | Cumulative sign-modulated integrator — discrete analogue of a coulomb counter applied to volume signed by `Δprice`. | `OBV_t = OBV_{t-1} + sign(Δp_t)·v_t` |
+| **Rolling z-score** | Local standardisation — mean-centred and scaled by rolling σ so heterogeneous channels can be compared on a common axis. | `z_t = (x_t − μ_t)/σ_t` |
+| **Welch PSD** | Power spectral density via Bartlett-windowed segment averaging. The standard estimator for stationary spectral content. | `Ŝ(f) = (1/K) Σ |FFT{x_k · w}|²` |
+| **STFT spectrogram** | Short-time Fourier transform — sliding windowed FFT producing a time × frequency energy surface. | `X(t,f) = Σ x[n]·w[n−t]·e^{−j2πfn}` |
+| **Autocorrelation** | Sample ACF over lags 1..K; detects serial dependence in returns / increments. | `ρ(k) = Cov(x_t, x_{t-k}) / Var(x_t)` |
+| **Rolling Sharpe** | Signal-to-noise ratio of log-returns over a sliding window, annualised. | `√A · μ_W(r) / σ_W(r)` |
+| **Drawdown** | Normalised deficit from running maximum — tracks regression below prior peak. | `dd_t = p_t / max_{s≤t} p_s − 1` |
+| **HMM regime decoder** | Gaussian hidden Markov model on returns — Viterbi-decoded latent state sequence (bear / sideways / bull). | `p(r_t | s_t) = 𝒩(μ_{s_t}, σ²_{s_t})` |
+
+Treating indicators this way makes their behaviour predictable: SMA introduces a known group delay of `(N−1)/2`, MACD has a passband determined by the two EMA time constants, Bollinger Band breaches are formal outliers under a local Gaussian assumption, etc. It also makes the codebase straightforwardly portable to any other streaming signal.
+
+---
+
+## Extending to Other Domains
+
+Although the dashboard ships with a Yahoo-Finance loader, none of the analysis modules know anything about prices. The exact same pipeline works for:
+
+- **EEG / LFP recordings.** Replace `fetch_stock_data(...)` with an MNE / NWB reader. The Welch PSD becomes a band-power estimator (alpha 8–13 Hz, beta 13–30 Hz, gamma 30+ Hz). The STFT spectrogram is the canonical time-frequency view used in cortical analysis. Bollinger Bands become threshold envelopes for event detection on band-pass-filtered traces.
+- **Neural spike rates.** Bin spike times into a rate signal, feed it in as `Close`. SMA produces the trial-averaged firing-rate envelope; EMA gives an online causal estimate. Autocorrelation surfaces refractoriness and rhythmicity. The HMM regime decoder is structurally identical to the behavioural-state decoders used in the honors-thesis [`neural-representation-explorer`](https://github.com/peterajhgraham) — same generative model, different domain.
+- **Physiological signals (HRV, EMG, respiration).** RSI's rectify-and-smooth structure is the standard EMG-envelope pipeline. ATR captures rolling amplitude for burst detection. The rolling z-score is the normalisation step before any cross-channel comparison.
+
+**What changes when you swap domains:** the loader, the units on the axes, and the interpretation of dominant frequency peaks.
+
+**What stays the same:** every module under `indicators.py`, `spectral.py`, `stats.py`, and `ui.py`. The DSP is domain-agnostic.
+
+---
+
 ## Directory Structure
- 
+
 ```
-Real_Time_Stock_Price_Dashboard/
-├── stock_dashboard.py
+real-time-stock-dashboard/
+├── stock_dashboard.py     # Streamlit entry point + data ingestion
+├── config.py              # All hyperparameters in one place
+├── indicators.py          # SMA, EMA, RSI, Bollinger, MACD, ATR, OBV, z-score
+├── spectral.py            # Welch PSD, STFT spectrogram, band-power
+├── stats.py               # ACF, returns distribution + KS, Sharpe, drawdown, HMM
+├── ui.py                  # Plotly / Streamlit rendering helpers
 ├── requirements.txt
 ├── README.md
 ├── LICENSE
 └── Example.png
 ```
- 
+
 ## Features
- 
-- **Real-Time Data**: Fetches and displays real-time stock data.
-- **Customizable Charts**: Supports candlestick and line charts.
-- **Technical Indicators**: Includes Simple Moving Average (SMA) and Exponential Moving Average (EMA).
-- **Historical Data**: View and analyze historical stock data.
-- **Multiple Tickers**: Monitor multiple stock symbols in real-time.
+
+- **Streaming ingestion** with Yahoo-Finance as the default source; trivially swappable for any other sampled signal.
+- **Indicator overlays** on candlestick or line charts: SMA, EMA, Bollinger volatility envelope.
+- **Dedicated panels** for MACD (bandpass), ATR, rolling z-score, and OBV.
+- **Spectral analysis panel** — Welch PSD with dominant-peak annotation + STFT spectrogram (the explicit bridge to EEG/neural pipelines).
+- **Statistical panels** — rolling autocorrelation, returns distribution with normal-fit overlay and KS statistic, rolling annualised Sharpe, drawdown chart.
+- **Optional HMM regime decoder** — 3-state Gaussian HMM on log-returns, decoded states drawn as background bands on the main chart.
+- **Live sidebar quotes** for a configurable watchlist.
+
 ## Installation
- 
-### Prerequisites
- 
-Ensure that you have Python 3.8 or higher installed on your machine. You'll also need to install the following Python libraries:
- 
-- `streamlit`
-- `yfinance`
-- `pandas`
-- `plotly`
-- `ta` (Technical Analysis library)
-### Steps to Install
- 
-1. **Clone the Repository**
-   First, clone the repository to your local machine:
-   ```bash
-   git clone https://github.com/peterajhgraham/Real_Time_Stock_Price_Dashboard.git
-   cd Real_Time_Stock_Price_Dashboard
-   ```
- 
-2. **Install the Required Packages**
-   Install the required Python packages using pip:
-   ```bash
-   pip3 install -r requirements.txt
-   ```
- 
-   If you don't have a requirements.txt file, you can manually install the dependencies:
-   ```bash
-   pip3 install streamlit yfinance pandas plotly pytz ta
-   ```
- 
-3. **Run the Application**
-   Once all the dependencies are installed, you can start the Streamlit app:
-   ```bash
-   python3 -m streamlit run stock_dashboard.py
-   ```
-   This command will launch the dashboard in your web browser!
-   *Example*:
-   <img src='Example.png'>
+
+```bash
+git clone https://github.com/peterajhgraham/real-time-stock-dashboard.git
+cd real-time-stock-dashboard
+pip3 install -r requirements.txt
+python3 -m streamlit run stock_dashboard.py
+```
+
+Python 3.9+ is recommended. `hmmlearn` is optional — the HMM regime panel degrades gracefully if it is not installed.
+
 ## Usage
-### Interface Overview
- 
-* **Ticker** - Enter the stock ticker symbol you want to analyze (e.g., AAPL for Apple Inc.)
-* **Time Period** - Select the time period over which you want to view the stock data (e.g., 1d, 1wk, 1mo, 1y, etc.)
-* **Chart Type** - Choose between a candlestick chart and a line chart
-* **Technical Indicators** - Select one or more technical indicators to apply to the chart
-### Real-Time Stock Prices
- 
-The sidebar displays the real-time prices for a predefined list of stock symbols (e.g., AAPL, GOOGL, AMZN, MSFT). These prices update automatically and show the percentage change from the opening price.
- 
-### Customization
- 
-You can easily modify the list of stock symbols monitored in real-time by editing the stock_symbols list in the `stock_dashboard.py` file.
- 
-### Example Usage
- 
-1. Monitoring Apple Stock in Real-Time:
-    * Enter `AAPL` in the ticker input
-    * Select `1d` for the time period
-    * Choose the Candlestick chart type
-    * Select `SMA 20`, `EMA 20`, & `RSI 14` for technical indicators
-    * Click `Update` to visualize the data
-2. Viewing Historical Data:
-    * Select a longer time period (e.g., `1y`)
-    * Use the `Line` chart type for a smooth trend visualization.
-    * Analyze the historical data displayed below the chart.
+
+Sidebar controls:
+
+- **Ticker** — any symbol supported by Yahoo Finance.
+- **Window** — analysis window (`1d` … `max`); the sampling interval is selected automatically.
+- **Chart type** — candlestick or line.
+- **Overlay indicators** — SMA, EMA, Bollinger Bands superimposed on the price chart.
+- **Panels** — toggle MACD, ATR + z-score, OBV, Welch PSD, STFT spectrogram, autocorrelation, returns distribution, rolling Sharpe, drawdown, HMM regimes.
+
+All hyperparameters (window lengths, smoothing constants, FFT segment sizes, HMM seed, colour palette) live in `config.py`.
+
 ## Known Issues
- 
-  * **Data Fetching Errors**: If no data is returned for a given ticker, an error message will be displayed. Ensure that the ticker symbol is correct and try again.
+
+- **Data fetching errors:** invalid tickers or rate-limited requests return empty data. The dashboard surfaces a Streamlit error.
+- **Short windows:** spectral estimators and the HMM need a reasonable number of samples; they degrade to informational messages rather than crashing.
+
 ## Contributing
- 
-Contributions are welcome! If you have ideas for new features, elements, or enhancements, feel free to fork the repository and submit a pull request. Please ensure your code follows general best practices and is well-documented.
- 
+
+Contributions welcome — particularly loaders for other signal domains (EEG, NWB, OpenBCI, EDF) so the platform can be exercised on physiological data without modification.
+
 ## License
- 
-This project is licensed under the MIT License. See the LICENSE file for more details.
- 
+
+MIT — see the `LICENSE` file.
+
 ## Contact
-For questions or support, please contact me at peter_graham@brown.edu.
+
+`peter_graham@brown.edu`

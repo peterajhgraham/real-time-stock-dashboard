@@ -1,6 +1,8 @@
 yfinance>=0.2.31
-streamlit==1.25.0
-pandas==2.1.0
-plotly==5.17.0
-pytz==2023.3
-ta==0.10.2
+streamlit>=1.25.0
+pandas>=2.1.0
+numpy>=1.24.0
+scipy>=1.11.0
+plotly>=5.17.0
+pytz>=2023.3
+hmmlearn>=0.3.0
