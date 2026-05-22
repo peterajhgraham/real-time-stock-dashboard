@@ -3,7 +3,7 @@
 This module is the explicit bridge between the financial signal-processing
 work in this repository and frequency-domain analysis of neural / EEG data.
 The Welch PSD and STFT spectrogram implemented here are the **same** tools
-used to isolate alpha/beta/gamma bands in cortical recordings — see the
+used to isolate alpha/beta/gamma bands in cortical recordings - see the
 honors-thesis ``neural-representation-explorer`` pipeline. Only the labels
 on the frequency axis change between domains.
 """
@@ -52,7 +52,7 @@ def power_spectral_density(
     Splits the (detrended) signal into overlapping segments, applies a
     Hann window to each, takes the squared magnitude of the FFT, and
     averages across segments. This reduces variance at the cost of
-    frequency resolution — the same bias/variance trade-off discussed in
+    frequency resolution - the same bias/variance trade-off discussed in
     Bendat & Piersol and applied in EEG band-power estimation.
 
     Sampling frequency ``fs`` is in cycles-per-sample by default; pass the
@@ -91,7 +91,7 @@ def stft_spectrogram(
     nperseg: int = STFT_NPERSEG,
     noverlap: int = STFT_NOVERLAP,
 ) -> STFTResult:
-    """Short-time Fourier transform — time-resolved spectral content.
+    """Short-time Fourier transform - time-resolved spectral content.
 
     Slides a windowed FFT across the signal, producing a time x frequency
     energy surface. This is exactly the spectrogram used in EEG analysis

@@ -118,7 +118,7 @@ def render_macd_panel(data: pd.DataFrame) -> None:
     fig.add_trace(go.Bar(x=data["Datetime"], y=data["MACD_HIST"],
                          name="Histogram", marker_color=PALETTE.histogram, opacity=0.5))
     fig.update_layout(height=260, margin=dict(l=40, r=40, t=30, b=30),
-                      title="MACD — bandpass filter (EMA_fast - EMA_slow)")
+                      title="MACD - bandpass filter (EMA_fast - EMA_slow)")
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -127,12 +127,12 @@ def render_volatility_panel(data: pd.DataFrame) -> None:
     col1, col2 = st.columns(2)
     with col1:
         fig = px.line(data, x="Datetime", y="ATR",
-                      title="Average True Range — rolling volatility envelope")
+                      title="Average True Range - rolling volatility envelope")
         fig.update_layout(height=240, margin=dict(l=40, r=40, t=40, b=30))
         st.plotly_chart(fig, use_container_width=True)
     with col2:
         fig = px.line(data, x="Datetime", y="ZSCORE",
-                      title="Rolling z-score — local standardisation")
+                      title="Rolling z-score - local standardisation")
         fig.add_hline(y=0, line_dash="dot", line_color="grey")
         fig.add_hline(y=2, line_dash="dot", line_color="red")
         fig.add_hline(y=-2, line_dash="dot", line_color="red")
@@ -144,7 +144,7 @@ def render_obv_panel(data: pd.DataFrame) -> None:
     if "OBV" not in data.columns:
         return
     fig = px.line(data, x="Datetime", y="OBV",
-                  title="On-Balance Volume — sign-modulated cumulative integrator")
+                  title="On-Balance Volume - sign-modulated cumulative integrator")
     fig.update_layout(height=240, margin=dict(l=40, r=40, t=40, b=30))
     st.plotly_chart(fig, use_container_width=True)
 
@@ -168,7 +168,7 @@ def render_psd_panel(psd: PSDResult) -> None:
             name="Dominant peaks",
         ))
     fig.update_layout(
-        title="Welch PSD — dominant frequency content (same operator as EEG band detection)",
+        title="Welch PSD - dominant frequency content (same operator as EEG band detection)",
         xaxis_title="Frequency (cycles / sample)",
         yaxis_title="Power",
         yaxis_type="log",
@@ -189,7 +189,7 @@ def render_spectrogram_panel(stft: STFTResult) -> None:
         colorbar=dict(title="dB"),
     ))
     fig.update_layout(
-        title="STFT spectrogram — time-resolved spectral content",
+        title="STFT spectrogram - time-resolved spectral content",
         xaxis_title="Time (samples)",
         yaxis_title="Frequency (cycles / sample)",
         height=340, margin=dict(l=40, r=40, t=40, b=40),
@@ -209,7 +209,7 @@ def render_autocorrelation_panel(ac: pd.Series) -> None:
                          name="autocorr"))
     fig.add_hline(y=0, line_color="grey")
     fig.update_layout(
-        title="Returns autocorrelation (lags 1..K) — serial dependence",
+        title="Returns autocorrelation (lags 1..K) - serial dependence",
         xaxis_title="Lag", yaxis_title="rho",
         height=280, margin=dict(l=40, r=40, t=40, b=30),
     )

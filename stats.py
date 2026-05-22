@@ -29,7 +29,7 @@ from config import (
 def log_returns(close: pd.Series) -> pd.Series:
     """Log-returns r_t = log(p_t) - log(p_{t-1}).
 
-    Log-returns are additive across time and approximately stationary —
+    Log-returns are additive across time and approximately stationary -
     the same reason neuroscientists work with log-power rather than raw
     power in EEG band analysis.
     """
@@ -102,7 +102,7 @@ def rolling_sharpe(
 
     A signal-to-noise ratio applied to financial returns. Conceptually
     identical to d-prime in psychophysics or SNR estimation in neural
-    decoding — mean signal divided by its variability, scaled to a unit
+    decoding - mean signal divided by its variability, scaled to a unit
     of interest.
     """
     r = log_returns(close)
@@ -148,7 +148,7 @@ def fit_regime_hmm(
     ordering these correspond to bear / sideways / bull regimes.
 
     Structurally identical to the behavioural-state decoding used in
-    ``neural-representation-explorer`` — same generative model, different
+    ``neural-representation-explorer`` - same generative model, different
     domain. Returns ``None`` if ``hmmlearn`` is not installed or the
     series is too short to fit.
     """

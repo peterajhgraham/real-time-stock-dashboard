@@ -3,7 +3,7 @@
 A streaming visualisation and quantitative-analysis dashboard. The data
 source happens to be Yahoo Finance equity prices, but every analysis
 primitive (FIR/IIR filters, PSD, STFT, autocorrelation, HMM regimes) is
-domain-agnostic — swap the loader and the same pipeline runs on EEG,
+domain-agnostic - swap the loader and the same pipeline runs on EEG,
 spike-rate envelopes, or any other streaming time-series.
 """
 
@@ -89,7 +89,7 @@ st.set_page_config(layout="wide", page_title="Time-Series Signal Analysis Platfo
 st.title("Real-Time Time-Series Signal Analysis Platform")
 st.caption(
     "Streaming financial data shown here, but the indicators, spectral tools "
-    "and statistical panels apply directly to any time-series signal — EEG, "
+    "and statistical panels apply directly to any time-series signal - EEG, "
     "spike-rate envelopes, physiological recordings."
 )
 
